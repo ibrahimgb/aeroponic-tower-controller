@@ -1,10 +1,15 @@
 #include <Arduino.h>
 #include <WiFi.h>
-
+#include <stdlib.h>
+#include <Wire.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#include "ClosedCube_HDC1080.h"
 
 void initWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(getenv("ssid") , getenv("password") );
+  //WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi ..");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');
@@ -13,51 +18,60 @@ void initWiFi() {
   Serial.println(WiFi.localIP());
 }
 
+// For Temperature Water Sensor
+// GPIO where the DS18B20 is connected to
+const int oneWireBus = 12;     
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(oneWireBus);
+// Pass our oneWire reference to Dallas Temperature sensor 
+DallasTemperature sensors(&oneWire);
+
+ 
+ClosedCube_HDC1080 hdc1080;
+
+
+
+void readTemperatureWaterSensor(){
+  sensors.requestTemperatures(); 
+  float temperatureC = sensors.getTempCByIndex(0);
+  float temperatureF = sensors.getTempFByIndex(0);
+  Serial.print(temperatureC);
+  Serial.println("ºC");
+  Serial.print(temperatureF);
+  Serial.println("ºF");
+  
+}
+
+
+void readTemperatureEnvironmentSensor(){
+
+Serial.print("T=");
+Serial.print(hdc1080.readTemperature());
+Serial.print("C, RH=");
+Serial.print(hdc1080.readHumidity());
+Serial.println("%");
+
+}
+
+
 void setup() {
    Serial.begin(9600);
 
-  // Set WiFi to station mode and disconnect from an AP if it was previously connected
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
+  sensors.begin();
 
-  Serial.println("Setup done");
-  initWiFi();
-  Serial.println("wifi connected");
+
+  hdc1080.begin(0x40);
+  Serial.print("Manufacturer ID=0x");
+Serial.println(hdc1080.readManufacturerId(), HEX); // 0x5449 ID of Texas Instruments
+Serial.print("Device ID=0x");
+Serial.println(hdc1080.readDeviceId(), HEX); // 0x1050 ID of the device
+ 
 }
 
 void loop() {
-    Serial.println("scan start");
+  readTemperatureWaterSensor();
+  readTemperatureEnvironmentSensor();
 
-  // WiFi.scanNetworks will return the number of networks found
-  int n = WiFi.scanNetworks();
-  Serial.println("scan done");
-  if (n == 0) {
-      Serial.println("no networks found");
-  } else {
-    Serial.print(n);
-    Serial.println(" networks found");
-    for (int i = 0; i < n; ++i) {
-      // Print SSID and RSSI for each network found
-      Serial.print(i + 1);
-      Serial.print(": ");
-      Serial.print(WiFi.SSID(i));
-      Serial.print(" (");
-      Serial.print(WiFi.RSSI(i));
-      Serial.print(")");
-      Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" ":"*");
-      delay(10);
-    }
-  }
-  Serial.println("");
-  /*
-  if (WiFi.status() != WL_DISCONNECTED){
-    Serial.println("wifi is Disconected");
-    initWiFi();
-  }
-  */
-Serial.println(WiFi.status());
-  // Wait a bit before scanning again
-  delay(2000);
 
+  delay(5000);
 }
