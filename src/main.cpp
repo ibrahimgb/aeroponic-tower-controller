@@ -2,14 +2,9 @@
 #include <WiFi.h>
 
 
-const char* ssid = "Tenda_423FF0";
-const char* password = "JBM120756";
-
-
-
 void initWiFi() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  WiFi.begin(getenv("ssid") , getenv("password") );
   Serial.print("Connecting to WiFi ..");
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print('.');
