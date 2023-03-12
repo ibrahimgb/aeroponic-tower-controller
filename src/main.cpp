@@ -6,9 +6,13 @@
 #include <DallasTemperature.h>
 #include "ClosedCube_HDC1080.h"
 
+const char* ssid = "Tenda_423FF0";
+const char* password = "JBM120756";
+
 void initWiFi() {
   WiFi.mode(WIFI_STA);
-  WiFi.begin(getenv("ssid") , getenv("password") );
+  //WiFi.begin(getenv("ssid") , getenv("password") );
+  WiFi.begin(ssid, password);
   //WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi ..");
   while (WiFi.status() != WL_CONNECTED) {
@@ -16,6 +20,7 @@ void initWiFi() {
     delay(1000);
   }
   Serial.println(WiFi.localIP());
+  Serial.println("wifi connected");
 }
 
 // For Temperature Water Sensor
@@ -29,7 +34,7 @@ DallasTemperature sensors(&oneWire);
  
 ClosedCube_HDC1080 hdc1080;
 
-
+const int relay = 26;
 
 void readTemperatureWaterSensor(){
   sensors.requestTemperatures(); 
@@ -66,12 +71,13 @@ Serial.println(hdc1080.readManufacturerId(), HEX); // 0x5449 ID of Texas Instrum
 Serial.print("Device ID=0x");
 Serial.println(hdc1080.readDeviceId(), HEX); // 0x1050 ID of the device
  
+ 
 }
 
 void loop() {
   readTemperatureWaterSensor();
   readTemperatureEnvironmentSensor();
 
-
+initWiFi();
   delay(5000);
 }
