@@ -5,9 +5,17 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "ClosedCube_HDC1080.h"
+#include <string.h>
+
+
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
 
 const char* ssid = "Tenda_423FF0";
 const char* password = "JBM120756";
+
+
+char jsonOutput[512];
 
 void initWiFi() {
   WiFi.mode(WIFI_STA);
@@ -23,61 +31,91 @@ void initWiFi() {
   Serial.println("wifi connected");
 }
 
-// For Temperature Water Sensor
-// GPIO where the DS18B20 is connected to
-const int oneWireBus = 12;     
-// Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(oneWireBus);
-// Pass our oneWire reference to Dallas Temperature sensor 
-DallasTemperature sensors(&oneWire);
+void sendData(){
+  if(WiFi.status() == WL_CONNECTED){
 
- 
-ClosedCube_HDC1080 hdc1080;
+  HTTPClient client;
 
-const int relay = 26;
+  client.begin("http://192.168.1.14:3000/sensor/newReading");
+  client.addHeader("Content-Type", "application/json");
 
-void readTemperatureWaterSensor(){
-  sensors.requestTemperatures(); 
-  float temperatureC = sensors.getTempCByIndex(0);
-  float temperatureF = sensors.getTempFByIndex(0);
-  Serial.print(temperatureC);
-  Serial.println("ºC");
-  Serial.print(temperatureF);
-  Serial.println("ºF");
-  
+  //const size_t CAPACITY = JSON_OBJECT_SIZE(1);
+  DynamicJsonDocument doc(512);
+
+  JsonObject root = doc.to<JsonObject>();
+  root["AeroponicTowerId"] = "id";
+  JsonObject waterTemperature = root.createNestedObject("waterTemperature");
+  waterTemperature["fahrenheit"] = 14.2;
+  waterTemperature["celsius"] = 33.63;
+  JsonObject envTempAndHumidity = root.createNestedObject("envTempAndHumidity");
+  envTempAndHumidity["fahrenheit"]= 22;
+  envTempAndHumidity["celsius"]= 34;
+  envTempAndHumidity["humidity"]= 60.5;
+  JsonObject insideTempAndHumidity = root.createNestedObject("insideTempAndHumidity");
+  insideTempAndHumidity["fahrenheit"]= 22;
+  insideTempAndHumidity["celsius"]= 34;
+  insideTempAndHumidity["humidity"]= 60.5;
+  root["uvLight"]= 2.2;
+  root["waterNeedsRefilling"]= false;
+  root["pumpIsWorking"]= true;
+
+  serializeJsonPretty(root, jsonOutput);
+  Serial.println(jsonOutput);
+
+
+
+  int httpCode = client.POST(String(jsonOutput));
+  if (httpCode > 0 ){
+    String payload = client.getString();
+    Serial.println("status code" + String(httpCode));
+    Serial.println(payload);
+
+    // char json[500];
+    // payload.replace(" ", "");
+    // payload.replace("\n", "");
+    // payload.trim();
+    // payload.remove(0,1);
+    // payload.toCharArray(json,500);
+
+    StaticJsonDocument<200> doc;
+    deserializeJson(doc,payload);
+
+    
+
+    const int id = doc["id"];
+    const int timeOn = doc["timeOn"];
+    const int timeOff = doc["timeOff"];
+
+    Serial.println(String(timeOff) + " - " + String(timeOn) + "\n");
+
+    client.end();
+
+
+
+  }else{
+    Serial.println("errer on req errer code:" + String(httpCode));
+  }
 }
 
-
-void readTemperatureEnvironmentSensor(){
-
-Serial.print("T=");
-Serial.print(hdc1080.readTemperature());
-Serial.print("C, RH=");
-Serial.print(hdc1080.readHumidity());
-Serial.println("%");
-
 }
+
 
 
 void setup() {
    Serial.begin(9600);
-
-  sensors.begin();
-
-
-  hdc1080.begin(0x40);
-  Serial.print("Manufacturer ID=0x");
-Serial.println(hdc1080.readManufacturerId(), HEX); // 0x5449 ID of Texas Instruments
-Serial.print("Device ID=0x");
-Serial.println(hdc1080.readDeviceId(), HEX); // 0x1050 ID of the device
- 
+  initWiFi();
  
 }
 
 void loop() {
-  readTemperatureWaterSensor();
-  readTemperatureEnvironmentSensor();
 
-initWiFi();
+
+
+if(WiFi.status() != WL_CONNECTED){
+  initWiFi();
+}
+
+sendData();
+
   delay(5000);
 }
