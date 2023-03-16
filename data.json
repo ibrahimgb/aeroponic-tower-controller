@@ -1,0 +1,22 @@
+{
+    "AeroponicTowerId":"id",
+    "waterTemperature":{
+        "fahrenheit":22,
+        "celsius": 34
+    },
+    "envTempAndHumidity":{
+        "fahrenheit":22,
+        "celsius": 34,
+        "humidity": 60
+    },
+    "insideTemperature&Humidity":{
+        "fahrenheit":22,
+        "celsius": 34,
+        "humidity": 60
+    },
+    "uvLight": 4
+    ,
+    "waterNeedsRefilling":false,
+    "pumpIsWorking":true
+
+}
