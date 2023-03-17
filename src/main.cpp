@@ -6,7 +6,7 @@
 #include <DallasTemperature.h>
 #include "ClosedCube_HDC1080.h"
 #include <string.h>
-
+#include "time.h"
 
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -14,13 +14,39 @@
 const char* ssid = "Tenda_423FF0";
 const char* password = "JBM120756";
 
-int timeOn = 15;
-int timeOff = 25;
 
-unsigned long lastTimeRedjesterd = millis();
-unsigned long Delay = 500;
+
+unsigned long lastTimeRegistered = millis();
+unsigned long Delay = 5000;
+
+unsigned long lastTimeRelayRegistered = millis();
+unsigned long timeOn = 3000;
+unsigned long timeOff = 2000;
+boolean relayStateIsOn = false; 
+
+int relay = 26;
 
 char jsonOutput[512];
+
+
+
+// NTP server to request epoch time
+const char* ntpServer = "pool.ntp.org";
+
+// Variable to save current epoch time
+unsigned long epochTime; 
+
+// Function that gets current epoch time
+unsigned long getTime() {
+  time_t now;
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    //Serial.println("Failed to obtain time");
+    return(0);
+  }
+  time(&now);
+  return now;
+}
 
 void initWiFi() {
   WiFi.mode(WIFI_STA);
@@ -63,6 +89,7 @@ void sendData(){
   root["uvLight"]= 2.2;
   root["waterNeedsRefilling"]= false;
   root["pumpIsWorking"]= true;
+  root["epochTime"]= getTime();
 
   serializeJsonPretty(root, jsonOutput);
   Serial.println(jsonOutput);
@@ -111,27 +138,46 @@ void sendData(){
 }
 
 
+void checkRelay(long timeNow){
+
+if(timeNow - lastTimeRelayRegistered > timeOn && relayStateIsOn){
+    Serial.println("relay turned off");
+    relayStateIsOn = !relayStateIsOn;
+    digitalWrite(relay, LOW);
+    lastTimeRelayRegistered = millis();
+  }
+  if(timeNow - lastTimeRelayRegistered > timeOff && !relayStateIsOn){
+    Serial.println("relay turned on");
+    relayStateIsOn = !relayStateIsOn;
+    digitalWrite(relay, HIGH);
+    lastTimeRelayRegistered = millis();
+  }
+
+}
+
+
 
 void setup() {
-   Serial.begin(9600);
+  Serial.begin(9600);
+  pinMode(relay, OUTPUT);
   initWiFi();
- 
+  configTime(0, 0, ntpServer);
 }
 
 void loop() {
 
 
   unsigned long timeNow = millis();
-  if(timeNow - lastTimeRedjesterd > Delay){
-    sendData();
-    lastTimeRedjesterd = millis();
+  if(timeNow - lastTimeRegistered > Delay){
+    //sendData();
+    lastTimeRegistered = millis();
   }
 
+
+  checkRelay(timeNow);
 
   if(WiFi.status() != WL_CONNECTED){
     initWiFi();
   }
 
-
-  delay(5000);
 }
