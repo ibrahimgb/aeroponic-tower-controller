@@ -14,6 +14,11 @@
 const char* ssid = "Tenda_423FF0";
 const char* password = "JBM120756";
 
+int timeOn = 15;
+int timeOff = 25;
+
+unsigned long lastTimeRedjesterd = millis();
+unsigned long Delay = 500;
 
 char jsonOutput[512];
 
@@ -79,12 +84,18 @@ void sendData(){
 
     StaticJsonDocument<200> doc;
     deserializeJson(doc,payload);
+    if( doc["timeOn"] > 0 && doc["timeOn"] < 60){
+      timeOn = doc["timeOn"];
+      Serial.println("time On have been updated to : "+ timeOn);
+    }
+
+    if( doc["timeOff"] > 0 && doc["timeOff"] < 120){
+      timeOff = doc["timeOff"];
+      Serial.println("time off have been updated to : "+ timeOff);
+    }
 
     
-
-    const int id = doc["id"];
-    const int timeOn = doc["timeOn"];
-    const int timeOff = doc["timeOff"];
+    
 
     Serial.println(String(timeOff) + " - " + String(timeOn) + "\n");
 
@@ -110,12 +121,17 @@ void setup() {
 void loop() {
 
 
+  unsigned long timeNow = millis();
+  if(timeNow - lastTimeRedjesterd > Delay){
+    sendData();
+    lastTimeRedjesterd = millis();
+  }
 
-if(WiFi.status() != WL_CONNECTED){
-  initWiFi();
-}
 
-sendData();
+  if(WiFi.status() != WL_CONNECTED){
+    initWiFi();
+  }
+
 
   delay(5000);
 }
