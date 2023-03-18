@@ -74,7 +74,7 @@ void sendData(){
   DynamicJsonDocument doc(512);
 
   JsonObject root = doc.to<JsonObject>();
-  root["AeroponicTowerId"] = "id";
+  root["AeroponicTowerId"] =  WiFi.macAddress();
   root["waterTemperature"] = 22;
   JsonObject envTempAndHumidity = root.createNestedObject("envTempAndHumidity");
   envTempAndHumidity["temperature"]= 22;
