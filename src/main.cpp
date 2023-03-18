@@ -75,16 +75,12 @@ void sendData(){
 
   JsonObject root = doc.to<JsonObject>();
   root["AeroponicTowerId"] = "id";
-  JsonObject waterTemperature = root.createNestedObject("waterTemperature");
-  waterTemperature["fahrenheit"] = 14.2;
-  waterTemperature["celsius"] = 33.63;
+  root["waterTemperature"] = 22;
   JsonObject envTempAndHumidity = root.createNestedObject("envTempAndHumidity");
-  envTempAndHumidity["fahrenheit"]= 22;
-  envTempAndHumidity["celsius"]= 34;
+  envTempAndHumidity["temperature"]= 22;
   envTempAndHumidity["humidity"]= 60.5;
   JsonObject insideTempAndHumidity = root.createNestedObject("insideTempAndHumidity");
-  insideTempAndHumidity["fahrenheit"]= 22;
-  insideTempAndHumidity["celsius"]= 34;
+  insideTempAndHumidity["temperature"]= 22;
   insideTempAndHumidity["humidity"]= 60.5;
   root["uvLight"]= 2.2;
   root["waterNeedsRefilling"]= false;
@@ -169,12 +165,12 @@ void loop() {
 
   unsigned long timeNow = millis();
   if(timeNow - lastTimeRegistered > Delay){
-    //sendData();
+    sendData();
     lastTimeRegistered = millis();
   }
 
 
-  checkRelay(timeNow);
+  //checkRelay(timeNow);
 
   if(WiFi.status() != WL_CONNECTED){
     initWiFi();
